@@ -12006,6 +12006,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#customization-of-cnn-model" class="md-nav__link">
+    Customization of CNN model
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -12108,6 +12115,19 @@
 <h2 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">#</a></h2>
 <p>It is a package for traffic light detection using MobileNetV2 and SSDLite.</p>
 <h2 id="training-information">Training Information<a class="headerlink" href="#training-information" title="Permanent link">#</a></h2>
+<p><em>NOTE</em>:</p>
+<ul>
+<li>Currently, Autoware supports SSD trained both <a href="https://github.com/qfgaohao/pytorch-ssd">pytorch-ssd</a> and <a href="https://github.com/open-mmlab/mmdetection.git">mmdetection</a>.<ul>
+<li>Please specify either <code>pytorch</code> or <code>mmdetection</code> in <code>dnn_header_type</code>.</li>
+</ul>
+</li>
+<li>Note that, tensor names of your onnx model conform the following.<ul>
+<li>Input tensor: <code>input</code></li>
+<li>Output box tensor: <code>boxes</code>.</li>
+<li>Output score tensor: <code>scores</code>.</li>
+</ul>
+</li>
+</ul>
 <h3 id="pretrained-model">Pretrained Model<a class="headerlink" href="#pretrained-model" title="Permanent link">#</a></h3>
 <p>The model is based on <a href="https://github.com/qfgaohao/pytorch-ssd">pytorch-ssd</a> and the pretrained model could be downloaded from <a href="https://drive.google.com/file/d/1puI6ltKZKJ4RoiCO-ypivzEysHaDVBsa/view">here</a>.</p>
 <h3 id="training-data">Training Data<a class="headerlink" href="#training-data" title="Permanent link">#</a></h3>
@@ -12116,6 +12136,53 @@
 <ul>
 <li><a href="https://drive.google.com/uc?id=1USFDPRH9JrVdGoqt27qHjRgittwc0kcO">https://drive.google.com/uc?id=1USFDPRH9JrVdGoqt27qHjRgittwc0kcO</a></li>
 </ul>
+<h3 id="customization-of-cnn-model">Customization of CNN model<a class="headerlink" href="#customization-of-cnn-model" title="Permanent link">#</a></h3>
+<p>In order to train models and export onnx model, we recommend <a href="https://github.com/open-mmlab/mmdetection.git">open-mmlab/mmdetection</a>.
+Please follow the <a href="https://mmdetection.readthedocs.io/en/latest/">official document</a> to install and experiment with mmdetection. If you get into troubles, <a href="https://mmdetection.readthedocs.io/en/stable/notes/faq.html">FAQ page</a> would help you.</p>
+<p>The following steps are example of a quick-start.</p>
+<h4 id="step-0-install-mmcv-and-mim">step 0. Install <a href="https://github.com/open-mmlab/mmcv.git">MMCV</a> and <a href="https://github.com/open-mmlab/mim.git">MIM</a><a class="headerlink" href="#step-0-install-mmcv-and-mim" title="Permanent link">#</a></h4>
+<p><em>NOTE</em> :</p>
+<ul>
+<li>First of all, install <a href="https://pytorch.org/">PyTorch</a> suitable for your CUDA version (CUDA11.6 is supported in Autoware).</li>
+<li>Our tested library versions are following. If the scripts as shown below would be old, please update to be suited to your version.<ul>
+<li>MMCV == 1.x</li>
+<li>MMDetection == 2.x</li>
+<li>MMDeploy == 0.x</li>
+<li>MIM == 0.3.x</li>
+</ul>
+</li>
+</ul>
+<p>In order to install mmcv suitable for your CUDA version, install it specifying a url.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Install mim</span>
+$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </span>openmim
+
+<span class="c1"># Install mmcv on a machine with CUDA11.6 and PyTorch1.13.0</span>
+$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>mmcv-full<span class="w"> </span>-f<span class="w"> </span>https://download.openmmlab.com/mmcv/dist/cu116/torch1.13/index.html
+</code></pre></div>
+<h4 id="step-1-install-mmdetection">step 1. Install MMDetection<a class="headerlink" href="#step-1-install-mmdetection" title="Permanent link">#</a></h4>
+<p>You can install mmdetection as a Python package or from source.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># As a Python package</span>
+$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>mmdet
+
+<span class="c1"># From source</span>
+$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/open-mmlab/mmdetection.git
+$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>mmdetection
+$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-v<span class="w"> </span>-e<span class="w"> </span>.
+</code></pre></div>
+<h4 id="step-2-train-your-model">step 2. Train your model<a class="headerlink" href="#step-2-train-your-model" title="Permanent link">#</a></h4>
+<p>Train model with your experiment configuration file. For the details of config file, see <a href="https://mmdetection.readthedocs.io/en/latest/user_guides/config.html">here</a>.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># [] is optional, you can start training from pre-trained checkpoint</span>
+$<span class="w"> </span>mim<span class="w"> </span>train<span class="w"> </span>mmdet<span class="w"> </span>YOUR_CONFIG.py<span class="w"> </span><span class="o">[</span>--resume-from<span class="w"> </span>YOUR_CHECKPOINT.pth<span class="o">]</span>
+</code></pre></div>
+<h4 id="step-3-export-onnx-model">step 3. Export onnx model<a class="headerlink" href="#step-3-export-onnx-model" title="Permanent link">#</a></h4>
+<p>In exporting onnx, use <code>mmdetection/tools/deployment/pytorch2onnx.py</code> or <a href="https://github.com/open-mmlab/mmdeploy.git">open-mmlab/mmdeploy</a>.
+<em>NOTE</em>:</p>
+<ul>
+<li>Currently, autoware does not support TensorRT plugin for NMS defined by open-mmlab. Therefore, <strong>please deploy onnx model excluding NMS layer</strong>.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>~/mmdetection/tools/deployment
+python3<span class="w"> </span>pytorch2onnx.py<span class="w"> </span>YOUR_CONFIG.py<span class="w"> </span>...
+</code></pre></div>
 <h2 id="inner-workings-algorithms">Inner-workings / Algorithms<a class="headerlink" href="#inner-workings-algorithms" title="Permanent link">#</a></h2>
 <p>Based on the camera image and the global ROI array detected by <code>map_based_detection</code> node, a CNN-based detection method enables highly accurate traffic light detection.</p>
 <h2 id="inputs-outputs">Inputs / Outputs<a class="headerlink" href="#inputs-outputs" title="Permanent link">#</a></h2>
