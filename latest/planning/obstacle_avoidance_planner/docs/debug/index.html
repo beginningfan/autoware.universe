@@ -17,7 +17,7 @@
         <link rel="next" href="../eb/">
       
       <link rel="icon" href="../../../../docs/assets/images/autoware-foundation.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.11">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.12">
     
     
       
@@ -7453,6 +7453,8 @@
         
           
         
+          
+        
       
       
         <label class="md-nav__link" for="__nav_8_1_2" id="__nav_8_1_2_label" tabindex="0">
@@ -7601,6 +7603,20 @@
     <li class="md-nav__item">
       <a href="../../../behavior_path_planner/docs/behavior_path_planner_pull_out_design/" class="md-nav__link">
         Pull Out design
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../behavior_path_planner/docs/behavior_path_planner_safety_check/" class="md-nav__link">
+        Safety Check Utils
       </a>
     </li>
   
@@ -12387,11 +12403,11 @@ onPath:<span class="o">=</span><span class="w"> </span><span class="m">20</span>
 </code></pre></div>
 <h3 id="plot">Plot<a class="headerlink" href="#plot" title="Permanent link">#</a></h3>
 <p>With the following script, any calculation time of the above functions can be plot.</p>
-<div class="highlight"><pre><span></span><code>ros2<span class="w"> </span>run<span class="w"> </span>obstacle_avoidance_planner<span class="w"> </span>calclation_time_plotter.py
+<div class="highlight"><pre><span></span><code>ros2<span class="w"> </span>run<span class="w"> </span>obstacle_avoidance_planner<span class="w"> </span>calculation_time_plotter.py
 </code></pre></div>
 <p><img alt="calculation_time_plot" src="../../media/debug/calculation_time_plot.png"></p>
 <p>You can specify functions to plot with the <code>-f</code> option.</p>
-<div class="highlight"><pre><span></span><code>ros2<span class="w"> </span>run<span class="w"> </span>obstacle_avoidance_planner<span class="w"> </span>calclation_time_plotter.py<span class="w"> </span>-f<span class="w"> </span><span class="s2">"onPath, generateOptimizedTrajectory, calcReferencePoints"</span>
+<div class="highlight"><pre><span></span><code>ros2<span class="w"> </span>run<span class="w"> </span>obstacle_avoidance_planner<span class="w"> </span>calculation_time_plotter.py<span class="w"> </span>-f<span class="w"> </span><span class="s2">"onPath, generateOptimizedTrajectory, calcReferencePoints"</span>
 </code></pre></div>
 <h2 id="qa-for-debug">Q&amp;A for Debug<a class="headerlink" href="#qa-for-debug" title="Permanent link">#</a></h2>
 <h3 id="the-output-frequency-is-low">The output frequency is low<a class="headerlink" href="#the-output-frequency-is-low" title="Permanent link">#</a></h3>
@@ -12510,7 +12526,7 @@ Please check if there is something weird by the visualization.</p>
     <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.expand", "navigation.indexes", "navigation.instant", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.footer"], "search": "../../../../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.fac441b0.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.c2be25ad.min.js"></script>
       
         <script src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
       
