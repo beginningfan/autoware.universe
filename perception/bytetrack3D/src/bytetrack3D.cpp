@@ -32,7 +32,13 @@ bool ByteTrack3D::do_inference(ObjectArray & objects)
   std::vector<ByteTrackObject> bytetrack_objects;
   for (auto & obj : objects) {
     ByteTrackObject bytetrack_obj;
-    bytetrack_obj.rect = cv::Rect(obj.x_offset, obj.y_offset, obj.width, obj.height);
+    bytetrack_obj.x = obj.x;
+    bytetrack_obj.y = obj.y;
+    bytetrack_obj.z = obj.z;
+    bytetrack_obj.yaw = obj.yaw;
+    bytetrack_obj.l = obj.l;
+    bytetrack_obj.w = obj.w;
+    bytetrack_obj.h = obj.h;
     bytetrack_obj.prob = obj.score;
     bytetrack_obj.label = obj.type;
     bytetrack_objects.emplace_back(bytetrack_obj);
@@ -46,11 +52,16 @@ bool ByteTrack3D::do_inference(ObjectArray & objects)
   latest_objects_.clear();
   for (const auto & tracking_result : output_stracks) {
     Object object{};
-    std::vector<float> tlwh = tracking_result.tlwh;
-    object.x_offset = tlwh[0];
-    object.y_offset = tlwh[1];
-    object.width = tlwh[2];
-    object.height = tlwh[3];
+    std::vector<float> pose = tracking_result.pose;
+    std::vector<float> lwh = tracking_result.lwh;
+    object.x = pose[0];
+    object.y = pose[1];
+    object.z = pose[2];
+    object.yaw = pose[3];
+    object.l = lwh[0];
+    object.w = lwh[1];
+    object.h = lwh[2];
+
     object.score = tracking_result.score;
     object.type = tracking_result.label;
     object.track_id = tracking_result.track_id;

@@ -48,20 +48,20 @@
 bool STrack::_parameters_loaded = false;
 STrack::KfParams STrack::_kf_parameters;
 
-STrack::STrack(std::vector<float> input_tlwh, float score, int label)
+STrack::STrack(std::vector<float> in_pose, std::vector<float> in_lwh, float score, int label)
 {
-  original_tlwh.resize(4);
-  original_tlwh.assign(input_tlwh.begin(), input_tlwh.end());
+  original_pose.resize(4);
+  original_pose.assign(in_pose.begin(), in_pose.end());
+  lwh.resize(3);
+  lwh.assign(in_lwh.begin(), in_lwh.end());
 
   is_activated = false;
   track_id = 0;
   state = TrackState::New;
 
-  tlwh.resize(4);
-  tlbr.resize(4);
+  pose.resize(4);
 
-  static_tlwh();  // update object size
-  static_tlbr();  // update object size
+  static_pose();  // update object size
   frame_id = 0;
   tracklet_len = 0;
   this->score = score;
@@ -91,18 +91,30 @@ void STrack::init_kalman_filter()
   // init kalman filter state
   Eigen::MatrixXd X0 = Eigen::MatrixXd::Zero(_kf_parameters.dim_x, 1);
   Eigen::MatrixXd P0 = Eigen::MatrixXd::Zero(_kf_parameters.dim_x, _kf_parameters.dim_x);
-  X0(IDX::X1) = this->original_tlwh[0];
-  X0(IDX::Y1) = this->original_tlwh[1];
-  X0(IDX::X2) = this->original_tlwh[2];
-  X0(IDX::Y2) = this->original_tlwh[3];
-  P0(IDX::X1, IDX::X1) = _kf_parameters.p0_cov_x;
-  P0(IDX::Y1, IDX::Y1) = _kf_parameters.p0_cov_y;
-  P0(IDX::X2, IDX::X2) = _kf_parameters.p0_cov_x;
-  P0(IDX::Y2, IDX::Y2) = _kf_parameters.p0_cov_y;
-  P0(IDX::VX1, IDX::VX1) = _kf_parameters.p0_cov_vx;
-  P0(IDX::VY1, IDX::VY1) = _kf_parameters.p0_cov_vy;
-  P0(IDX::VX2, IDX::VX2) = _kf_parameters.p0_cov_vx;
-  P0(IDX::VY2, IDX::VY2) = _kf_parameters.p0_cov_vy;
+  X0(IDX::X) = this->original_pose[0];
+  X0(IDX::Y) = this->original_pose[1];
+  X0(IDX::Z) = this->original_pose[2];
+  X0(IDX::Yaw) = this->original_pose[3];
+  X0(IDX::L) = this->lwh[0];
+  X0(IDX::W) = this->lwh[1];
+  X0(IDX::H) = this->lwh[2];
+  X0(IDX::VX) = 0;
+  X0(IDX::VY) = 0;
+  X0(IDX::VZ) = 0;
+  X0(IDX::VYaw) = 0;
+
+
+  P0(IDX::X, IDX::X) = _kf_parameters.p0_cov_p;
+  P0(IDX::Y, IDX::Y) = _kf_parameters.p0_cov_p;
+  P0(IDX::Z, IDX::Z) = _kf_parameters.p0_cov_p;
+  P0(IDX::Yaw, IDX::Yaw) = _kf_parameters.p0_cov_pyaw;
+  P0(IDX::L, IDX::L) = _kf_parameters.p0_cov_d;
+  P0(IDX::W, IDX::W) = _kf_parameters.p0_cov_d;
+  P0(IDX::H, IDX::H) = _kf_parameters.p0_cov_d;
+  P0(IDX::VX, IDX::VX) = _kf_parameters.p0_cov_v;
+  P0(IDX::VY, IDX::VY) = _kf_parameters.p0_cov_v;
+  P0(IDX::VZ, IDX::VZ) = _kf_parameters.p0_cov_v;
+  P0(IDX::VYaw, IDX::VYaw) = _kf_parameters.p0_cov_vyaw;
   this->kalman_filter_.init(X0, P0);
 }
 
@@ -128,7 +140,7 @@ void STrack::re_activate(STrack & new_track, int frame_id, bool new_id)
 {
   // TODO(me): write kf update
   Eigen::MatrixXd measurement = Eigen::MatrixXd::Zero(_kf_parameters.dim_z, 1);
-  measurement << new_track.tlwh[0], new_track.tlwh[1], new_track.tlwh[2], new_track.tlwh[3];
+  measurement << new_track.pose[0], new_track.pose[1], new_track.pose[2], new_track.pose[3];
   update_kalman_filter(measurement);
 
   reflect_state();
@@ -150,9 +162,8 @@ void STrack::update(STrack & new_track, int frame_id)
   this->tracklet_len++;
 
   // update
-  // TODO(me): write update
   Eigen::MatrixXd measurement = Eigen::MatrixXd::Zero(_kf_parameters.dim_z, 1);
-  measurement << new_track.tlwh[0], new_track.tlwh[1], new_track.tlwh[2], new_track.tlwh[3];
+  measurement << new_track.pose[0], new_track.pose[1], new_track.pose[2], new_track.pose[3];
   update_kalman_filter(measurement);
 
   reflect_state();
@@ -166,58 +177,27 @@ void STrack::update(STrack & new_track, int frame_id)
 /** reflect kalman filter state to current object variables*/
 void STrack::reflect_state()
 {
-  // update tlwh
-  static_tlwh();
-  // update tlbr
-  static_tlbr();
+  static_pose();
 }
 
-void STrack::static_tlwh()
+void STrack::static_pose()
 {
   if (this->state == TrackState::New) {
-    tlwh[0] = original_tlwh[0];
-    tlwh[1] = original_tlwh[1];
-    tlwh[2] = original_tlwh[2];
-    tlwh[3] = original_tlwh[3];
+    pose[0] = original_pose[0];
+    pose[1] = original_pose[1];
+    pose[2] = original_pose[2];
+    pose[3] = original_pose[3];
     return;
   }
-  // put kf state to tlwh
+  // put kf state to pose
   Eigen::MatrixXd X = Eigen::MatrixXd::Zero(_kf_parameters.dim_x, 1);
   this->kalman_filter_.getX(X);
-  tlwh[0] = X(IDX::X1);
-  tlwh[1] = X(IDX::Y1);
-  tlwh[2] = X(IDX::X2);
-  tlwh[3] = X(IDX::Y2);
+  pose[0] = X(IDX::X);
+  pose[1] = X(IDX::Y);
+  pose[2] = X(IDX::Z);
+  pose[3] = X(IDX::Yaw);
 }
 
-void STrack::static_tlbr()
-{
-  tlbr.clear();
-  tlbr.assign(tlwh.begin(), tlwh.end());
-  tlbr[2] += tlbr[0];
-  tlbr[3] += tlbr[1];
-}
-
-std::vector<float> STrack::tlwh_to_xyah(std::vector<float> tlwh_tmp)
-{
-  std::vector<float> tlwh_output = tlwh_tmp;
-  tlwh_output[0] += tlwh_output[2] / 2;
-  tlwh_output[1] += tlwh_output[3] / 2;
-  tlwh_output[2] /= tlwh_output[3];
-  return tlwh_output;
-}
-
-std::vector<float> STrack::to_xyah()
-{
-  return tlwh_to_xyah(tlwh);
-}
-
-std::vector<float> STrack::tlbr_to_tlwh(std::vector<float> & tlbr)
-{
-  tlbr[2] -= tlbr[0];
-  tlbr[3] -= tlbr[1];
-  return tlbr;
-}
 
 void STrack::mark_lost()
 {
@@ -249,9 +229,7 @@ void STrack::multi_predict(std::vector<STrack *> & stracks)
     }
     // prediction
     stracks[i]->predict(stracks[i]->frame_id + 1);
-    // TODO(me): write prediction
-    stracks[i]->static_tlwh();
-    stracks[i]->static_tlbr();
+    stracks[i]->static_pose();
   }
 }
 
@@ -261,18 +239,25 @@ void STrack::update_kalman_filter(const Eigen::MatrixXd & measurement)
   assert(_parameters_loaded);
 
   // get C matrix
+  // 测量矩阵
   Eigen::MatrixXd C = Eigen::MatrixXd::Zero(_kf_parameters.dim_z, _kf_parameters.dim_x);
-  C(IDX::X1, IDX::X1) = 1;
-  C(IDX::Y1, IDX::Y1) = 1;
-  C(IDX::X2, IDX::X2) = 1;
-  C(IDX::Y2, IDX::Y2) = 1;
+  C(IDX::X, IDX::X) = 1;
+  C(IDX::Y, IDX::Y) = 1;
+  C(IDX::Z, IDX::Z) = 1;
+  C(IDX::Yaw, IDX::Yaw) = 1;
+  C(IDX::L, IDX::L) = 1;
+  C(IDX::W, IDX::W) = 1;
+  C(IDX::H, IDX::H) = 1;
 
-  // get R matrix
+  // get R matrix(__Observation Noise Covariance Matrix__)
   Eigen::MatrixXd R = Eigen::MatrixXd::Zero(_kf_parameters.dim_z, _kf_parameters.dim_z);
-  R(IDX::X1, IDX::X1) = _kf_parameters.r_cov_x;
-  R(IDX::Y1, IDX::Y1) = _kf_parameters.r_cov_y;
-  R(IDX::X2, IDX::X2) = _kf_parameters.r_cov_x;
-  R(IDX::Y2, IDX::Y2) = _kf_parameters.r_cov_y;
+  R(IDX::X, IDX::X) = _kf_parameters.r_cov_p;
+  R(IDX::Y, IDX::Y) = _kf_parameters.r_cov_p;
+  R(IDX::Z, IDX::Z) = _kf_parameters.r_cov_p;
+  R(IDX::Yaw, IDX::Yaw) = _kf_parameters.r_cov_pyaw;
+  R(IDX::L, IDX::L) = _kf_parameters.r_cov_d;
+  R(IDX::W, IDX::W) = _kf_parameters.r_cov_d;
+  R(IDX::H, IDX::H) = _kf_parameters.r_cov_d;
 
   // update
   if (!this->kalman_filter_.update(measurement, C, R)) {
@@ -290,14 +275,14 @@ void STrack::predict(const int frame_id)
 
   // else do prediction
   float time_elapsed = _kf_parameters.dt * (frame_id - this->frame_id);
-  // A matrix
+  // A matrix(__State Transition Matrix__)
   Eigen::MatrixXd A = Eigen::MatrixXd::Identity(_kf_parameters.dim_x, _kf_parameters.dim_x);
-  A(IDX::X1, IDX::VX1) = time_elapsed;
-  A(IDX::Y1, IDX::VY1) = time_elapsed;
-  A(IDX::X2, IDX::VX2) = time_elapsed;
-  A(IDX::Y2, IDX::VY2) = time_elapsed;
+  A(IDX::X, IDX::VX) = time_elapsed;
+  A(IDX::Y, IDX::VY) = time_elapsed;
+  A(IDX::Z, IDX::VZ) = time_elapsed;
+  A(IDX::Yaw, IDX::VYaw) = time_elapsed;
 
-  // u and B matrix
+  // u and B matrix(____ and __Control Input Matrix__)
   Eigen::MatrixXd u = Eigen::MatrixXd::Zero(_kf_parameters.dim_x, 1);
   Eigen::MatrixXd B = Eigen::MatrixXd::Zero(_kf_parameters.dim_x, _kf_parameters.dim_x);
 
@@ -305,16 +290,19 @@ void STrack::predict(const int frame_id)
   Eigen::MatrixXd P_t = Eigen::MatrixXd::Zero(_kf_parameters.dim_x, _kf_parameters.dim_x);
   this->kalman_filter_.getP(P_t);
 
-  // Q matrix
+  // Q matrix(__Process Noise Covariance Matrix__)
   Eigen::MatrixXd Q = Eigen::MatrixXd::Zero(_kf_parameters.dim_x, _kf_parameters.dim_x);
-  Q(IDX::X1, IDX::X1) = _kf_parameters.q_cov_x;
-  Q(IDX::Y1, IDX::Y1) = _kf_parameters.q_cov_y;
-  Q(IDX::VX1, IDX::VX1) = _kf_parameters.q_cov_vx;
-  Q(IDX::VY1, IDX::VY1) = _kf_parameters.q_cov_vy;
-  Q(IDX::X2, IDX::X2) = _kf_parameters.q_cov_x;
-  Q(IDX::Y2, IDX::Y2) = _kf_parameters.q_cov_y;
-  Q(IDX::VX2, IDX::VX2) = _kf_parameters.q_cov_vx;
-  Q(IDX::VY2, IDX::VY2) = _kf_parameters.q_cov_vy;
+  Q(IDX::X, IDX::X) = _kf_parameters.q_cov_p;
+  Q(IDX::Y, IDX::Y) = _kf_parameters.q_cov_p;
+  Q(IDX::Z, IDX::Z) = _kf_parameters.q_cov_p;
+  Q(IDX::Yaw, IDX::Yaw) = _kf_parameters.q_cov_pyaw;
+  Q(IDX::L, IDX::L) = _kf_parameters.q_cov_d;
+  Q(IDX::W, IDX::W) = _kf_parameters.q_cov_d;
+  Q(IDX::H, IDX::H) = _kf_parameters.q_cov_d;
+  Q(IDX::VX, IDX::VX) = _kf_parameters.q_cov_v;
+  Q(IDX::VY, IDX::VY) = _kf_parameters.q_cov_v;
+  Q(IDX::VZ, IDX::VZ) = _kf_parameters.q_cov_v;
+  Q(IDX::VYaw, IDX::VYaw) = _kf_parameters.q_cov_vyaw;
 
   // prediction
   if (!this->kalman_filter_.predict(u, A, B, Q)) {
@@ -328,15 +316,19 @@ void STrack::load_parameters(const std::string & path)
   // initialize ekf params
   _kf_parameters.dim_x = config["dim_x"].as<int>();
   _kf_parameters.dim_z = config["dim_z"].as<int>();
-  _kf_parameters.q_cov_x = config["q_cov_x"].as<float>();
-  _kf_parameters.q_cov_y = config["q_cov_y"].as<float>();
-  _kf_parameters.q_cov_vx = config["q_cov_vx"].as<float>();
-  _kf_parameters.q_cov_vy = config["q_cov_vy"].as<float>();
-  _kf_parameters.r_cov_x = config["r_cov_x"].as<float>();
-  _kf_parameters.r_cov_y = config["r_cov_y"].as<float>();
-  _kf_parameters.p0_cov_x = config["p0_cov_x"].as<float>();
-  _kf_parameters.p0_cov_y = config["p0_cov_y"].as<float>();
-  _kf_parameters.p0_cov_vx = config["p0_cov_vx"].as<float>();
-  _kf_parameters.p0_cov_vy = config["p0_cov_vy"].as<float>();
+  _kf_parameters.q_cov_p = config["q_cov_p"].as<float>();
+  _kf_parameters.q_cov_pyaw = config["q_cov_pyaw"].as<float>();
+  _kf_parameters.q_cov_d = config["q_cov_d"].as<float>();
+  _kf_parameters.q_cov_v = config["q_cov_v"].as<float>();
+  _kf_parameters.q_cov_vyaw = config["q_cov_vyaw"].as<float>();
+  _kf_parameters.r_cov_p = config["r_cov_p"].as<float>();
+  _kf_parameters.r_cov_pyaw = config["r_cov_pyaw"].as<float>();
+  _kf_parameters.r_cov_d = config["r_cov_d"].as<float>();
+  _kf_parameters.p0_cov_p = config["p0_cov_p"].as<float>();
+  _kf_parameters.p0_cov_pyaw = config["p0_cov_pyaw"].as<float>();
+  _kf_parameters.p0_cov_d = config["p0_cov_d"].as<float>();
+  _kf_parameters.p0_cov_v = config["p0_cov_v"].as<float>();
+  _kf_parameters.p0_cov_vyaw = config["p0_cov_vyaw"].as<float>();
+
   _kf_parameters.dt = config["dt"].as<float>();
 }

@@ -44,7 +44,8 @@
 
 struct ByteTrackObject
 {
-  cv::Rect_<float> rect;
+  float x, y, z, yaw;
+  float l, w, h;
   int label;
   float prob;
 };
@@ -73,13 +74,11 @@ private:
     std::vector<std::vector<float>> & cost_matrix, int cost_matrix_size, int cost_matrix_size_size,
     float thresh, std::vector<std::vector<int>> & matches, std::vector<int> & unmatched_a,
     std::vector<int> & unmatched_b);
-  std::vector<std::vector<float>> iou_distance(
+  std::vector<std::vector<float>> distance(
     std::vector<STrack *> & atracks, std::vector<STrack> & btracks, int & dist_size,
     int & dist_size_size);
-  std::vector<std::vector<float>> iou_distance(
+  std::vector<std::vector<float>> distance(
     std::vector<STrack> & atracks, std::vector<STrack> & btracks);
-  std::vector<std::vector<float>> ious(
-    std::vector<std::vector<float>> & atlbrs, std::vector<std::vector<float>> & btlbrs);
 
   double lapjv(
     const std::vector<std::vector<float>> & cost, std::vector<int> & rowsol,

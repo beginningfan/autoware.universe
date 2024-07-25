@@ -32,10 +32,8 @@ namespace bytetrack3D
 {
 struct Object
 {
-  int32_t x_offset;
-  int32_t y_offset;
-  int32_t height;
-  int32_t width;
+  float x, y, z, yaw;
+  float l, w, h;
   float score;
   int32_t type;
   int32_t track_id;

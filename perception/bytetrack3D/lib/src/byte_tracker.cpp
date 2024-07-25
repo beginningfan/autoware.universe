@@ -78,16 +78,22 @@ std::vector<STrack> ByteTracker::update(const std::vector<ByteTrackObject> & obj
 
   if (objects.size() > 0) {
     for (size_t i = 0; i < objects.size(); i++) {
-      std::vector<float> tlbr_;
-      tlbr_.resize(4);
-      tlbr_[0] = objects[i].rect.x;
-      tlbr_[1] = objects[i].rect.y;
-      tlbr_[2] = objects[i].rect.x + objects[i].rect.width;
-      tlbr_[3] = objects[i].rect.y + objects[i].rect.height;
+      std::vector<float> pose_;
+      pose_.resize(4);
+      pose_[0] = objects[i].x;
+      pose_[1] = objects[i].y;
+      pose_[2] = objects[i].z;
+      pose_[3] = objects[i].yaw;
+
+      std::vector<float> dim_;
+      dim_.resize(3);
+      dim_[0] = objects[i].l;
+      dim_[1] = objects[i].w;
+      dim_[2] = objects[i].h;
 
       float score = objects[i].prob;
 
-      STrack strack(STrack::tlbr_to_tlwh(tlbr_), score, objects[i].label);
+      STrack strack(pose_, dim_, score, objects[i].label);
       if (score >= track_thresh) {
         detections.push_back(strack);
       } else {
@@ -113,7 +119,7 @@ std::vector<STrack> ByteTracker::update(const std::vector<ByteTrackObject> & obj
 
   std::vector<std::vector<float> > dists;
   int dist_size = 0, dist_size_size = 0;
-  dists = iou_distance(strack_pool, detections, dist_size, dist_size_size);
+  dists = distance(strack_pool, detections, dist_size, dist_size_size);
 
   std::vector<std::vector<int> > matches;
   std::vector<int> u_track, u_detection;
@@ -145,7 +151,7 @@ std::vector<STrack> ByteTracker::update(const std::vector<ByteTrackObject> & obj
   }
 
   dists.clear();
-  dists = iou_distance(r_tracked_stracks, detections, dist_size, dist_size_size);
+  dists = distance(r_tracked_stracks, detections, dist_size, dist_size_size);
 
   matches.clear();
   u_track.clear();
@@ -177,7 +183,7 @@ std::vector<STrack> ByteTracker::update(const std::vector<ByteTrackObject> & obj
   detections.assign(detections_cp.begin(), detections_cp.end());
 
   dists.clear();
-  dists = iou_distance(unconfirmed, detections, dist_size, dist_size_size);
+  dists = distance(unconfirmed, detections, dist_size, dist_size_size);
 
   matches.clear();
   std::vector<int> u_unconfirmed;

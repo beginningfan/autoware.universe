@@ -53,15 +53,11 @@ enum TrackState { New = 0, Tracked, Lost, Removed };
 class STrack
 {
 public:
-  STrack(std::vector<float> tlwh_, float score, int label);
+  STrack(std::vector<float> in_pose, std::vector<float> in_lwh, float score, int label);
   ~STrack();
 
-  std::vector<float> static tlbr_to_tlwh(std::vector<float> & tlbr);
   static void multi_predict(std::vector<STrack *> & stracks);
-  void static_tlwh();
-  void static_tlbr();
-  std::vector<float> tlwh_to_xyah(std::vector<float> tlwh_tmp);
-  std::vector<float> to_xyah();
+  void static_pose();
   void mark_lost();
   void mark_removed();
   int next_id();
@@ -83,9 +79,10 @@ public:
   boost::uuids::uuid unique_id;
   int state;
 
-  std::vector<float> original_tlwh;  // top left width height
-  std::vector<float> tlwh;           // top left width height
-  std::vector<float> tlbr;           // top left bottom right
+  std::vector<float> original_pose;  // x,y,z,yaw
+  std::vector<float> pose;           // x,y,z,yaw
+  std::vector<float> lwh;            // l,w,h
+
   int frame_id;
   int tracklet_len;
   int start_frame;
@@ -99,25 +96,28 @@ private:
   struct KfParams
   {
     // dimension
-    char dim_x = 8;
-    char dim_z = 4;
+    char dim_x = 11;
+    char dim_z =  7;
     // system noise
-    float q_cov_x;
-    float q_cov_y;
-    float q_cov_vx;
-    float q_cov_vy;
+    float q_cov_p;
+    float q_cov_pyaw;
+    float q_cov_d;
+    float q_cov_v;
+    float q_cov_vyaw;
     // measurement noise
-    float r_cov_x;
-    float r_cov_y;
+    float r_cov_p;
+    float r_cov_pyaw;
+    float r_cov_d;
     // initial state covariance
-    float p0_cov_x;
-    float p0_cov_y;
-    float p0_cov_vx;
-    float p0_cov_vy;
+    float p0_cov_p;
+    float p0_cov_pyaw;
+    float p0_cov_d;
+    float p0_cov_v;
+    float p0_cov_vyaw;
     // other parameters
     float dt;  // sampling time
   };
   static KfParams _kf_parameters;
   static bool _parameters_loaded;
-  enum IDX { X1 = 0, Y1 = 1, X2 = 2, Y2 = 3, VX1 = 4, VY1 = 5, VX2 = 6, VY2 = 7 };
+  enum IDX { X = 0, Y = 1, Z = 2, Yaw = 3, L = 4, W = 5, H = 6, VX = 7, VY = 8, VZ = 9, VYaw= 10};
 };

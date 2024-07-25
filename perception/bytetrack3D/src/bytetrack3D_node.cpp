@@ -71,10 +71,13 @@ void ByteTrack3DNode::on_rect(
   ObjectArray object_array;
   for (auto & feat_obj : msg->objects) {
     Object obj;
-    obj.x_offset = feat_obj.kinematics.pose_with_covariance.pose.position.x * 100;
-    obj.y_offset = feat_obj.kinematics.pose_with_covariance.pose.position.y * 100;
-    obj.width = feat_obj.shape.dimensions.x * 100;
-    obj.height = feat_obj.shape.dimensions.y * 100;
+    obj.x = feat_obj.kinematics.pose_with_covariance.pose.position.x;
+    obj.y = feat_obj.kinematics.pose_with_covariance.pose.position.y;
+    obj.z = feat_obj.kinematics.pose_with_covariance.pose.position.z;
+    obj.yaw = std::acos(feat_obj.kinematics.pose_with_covariance.pose.orientation.w);
+    obj.l = feat_obj.shape.dimensions.x;
+    obj.w = feat_obj.shape.dimensions.y;
+    obj.h = feat_obj.shape.dimensions.z;
     obj.score = feat_obj.existence_probability;
     obj.type = feat_obj.classification.front().label;
     object_array.emplace_back(obj);
@@ -83,10 +86,15 @@ void ByteTrack3DNode::on_rect(
   bytetrack3D::ObjectArray objects = bytetrack3D_->update_tracker(object_array);
   for (const auto & tracked_object : objects) {
     autoware_perception_msgs::msg::DetectedObject object;
-    object.kinematics.pose_with_covariance.pose.position.x = tracked_object.x_offset * 0.01;
-    object.kinematics.pose_with_covariance.pose.position.y = tracked_object.y_offset * 0.01;
-    object.shape.dimensions.x = tracked_object.width * 0.01;
-    object.shape.dimensions.y = tracked_object.height * 0.01;
+    object.kinematics.pose_with_covariance.pose.position.x = tracked_object.x;
+    object.kinematics.pose_with_covariance.pose.position.y = tracked_object.y;
+    object.kinematics.pose_with_covariance.pose.position.z = tracked_object.z;
+    object.kinematics.pose_with_covariance.pose.orientation.w = std::cos(tracked_object.yaw);
+std::cout << "Yaw: " << tracked_object.yaw << ", " << object.kinematics.pose_with_covariance.pose.orientation.w << std::endl;
+    object.kinematics.pose_with_covariance.pose.orientation.z = std::sin(tracked_object.yaw);
+    object.shape.dimensions.x = tracked_object.l;
+    object.shape.dimensions.y = tracked_object.w;
+    object.shape.dimensions.z = tracked_object.h;
     object.existence_probability = tracked_object.score;
     object.classification.emplace_back(
       autoware_perception_msgs::build<Label>().label(tracked_object.type).probability(1.0f));

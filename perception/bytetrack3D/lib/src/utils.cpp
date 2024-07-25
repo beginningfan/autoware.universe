@@ -106,7 +106,7 @@ void ByteTracker::remove_duplicate_stracks(
   std::vector<STrack> & resa, std::vector<STrack> & resb, std::vector<STrack> & stracksa,
   std::vector<STrack> & stracksb)
 {
-  std::vector<std::vector<float>> pdist = iou_distance(stracksa, stracksb);
+  std::vector<std::vector<float>> pdist = distance(stracksa, stracksb);
   std::vector<std::pair<int, int>> pairs;
   for (size_t i = 0; i < pdist.size(); i++) {
     for (size_t j = 0; j < pdist[i].size(); j++) {
@@ -177,41 +177,7 @@ void ByteTracker::linear_assignment(
   }
 }
 
-std::vector<std::vector<float>> ByteTracker::ious(
-  std::vector<std::vector<float>> & atlbrs, std::vector<std::vector<float>> & btlbrs)
-{
-  std::vector<std::vector<float>> ious;
-  if (atlbrs.size() * btlbrs.size() == 0) return ious;
-
-  ious.resize(atlbrs.size());
-  for (size_t i = 0; i < ious.size(); i++) {
-    ious[i].resize(btlbrs.size());
-  }
-
-  // bbox_ious
-  for (size_t k = 0; k < btlbrs.size(); k++) {
-    float box_area = (btlbrs[k][2] - btlbrs[k][0] + 1) * (btlbrs[k][3] - btlbrs[k][1] + 1);
-    for (size_t n = 0; n < atlbrs.size(); n++) {
-      float iw = std::min(atlbrs[n][2], btlbrs[k][2]) - std::max(atlbrs[n][0], btlbrs[k][0]) + 1;
-      if (iw > 0) {
-        float ih = std::min(atlbrs[n][3], btlbrs[k][3]) - std::max(atlbrs[n][1], btlbrs[k][1]) + 1;
-        if (ih > 0) {
-          float ua = (atlbrs[n][2] - atlbrs[n][0] + 1) * (atlbrs[n][3] - atlbrs[n][1] + 1) +
-                     box_area - iw * ih;
-          ious[n][k] = iw * ih / ua;
-        } else {
-          ious[n][k] = 0.0;
-        }
-      } else {
-        ious[n][k] = 0.0;
-      }
-    }
-  }
-
-  return ious;
-}
-
-std::vector<std::vector<float>> ByteTracker::iou_distance(
+std::vector<std::vector<float>> ByteTracker::distance(
   std::vector<STrack *> & atracks, std::vector<STrack> & btracks, int & dist_size,
   int & dist_size_size)
 {
@@ -221,23 +187,15 @@ std::vector<std::vector<float>> ByteTracker::iou_distance(
     dist_size_size = btracks.size();
     return cost_matrix;
   }
-  std::vector<std::vector<float>> atlbrs, btlbrs;
-  for (size_t i = 0; i < atracks.size(); i++) {
-    atlbrs.push_back(atracks[i]->tlbr);
-  }
-  for (size_t i = 0; i < btracks.size(); i++) {
-    btlbrs.push_back(btracks[i].tlbr);
-  }
 
   dist_size = atracks.size();
   dist_size_size = btracks.size();
-
-  std::vector<std::vector<float>> _ious = ious(atlbrs, btlbrs);
-
-  for (size_t i = 0; i < _ious.size(); i++) {
+  for (int i = 0; i < dist_size; i++) {
     std::vector<float> _iou;
-    for (size_t j = 0; j < _ious[i].size(); j++) {
-      _iou.push_back(1 - _ious[i][j]);
+    for (int j = 0; j < dist_size_size; j++) {
+      _iou.push_back(std::sqrt(std::pow(atracks[i]->pose[0] - btracks[j].pose[0], 2) + 
+        std::pow(atracks[i]->pose[1] - btracks[j].pose[1], 2) +
+        std::pow(atracks[i]->pose[2] - btracks[j].pose[2], 2)));
     }
     cost_matrix.push_back(_iou);
   }
@@ -245,27 +203,21 @@ std::vector<std::vector<float>> ByteTracker::iou_distance(
   return cost_matrix;
 }
 
-std::vector<std::vector<float>> ByteTracker::iou_distance(
+
+std::vector<std::vector<float>> ByteTracker::distance(
   std::vector<STrack> & atracks, std::vector<STrack> & btracks)
 {
-  std::vector<std::vector<float>> atlbrs, btlbrs;
-  for (size_t i = 0; i < atracks.size(); i++) {
-    atlbrs.push_back(atracks[i].tlbr);
-  }
-  for (size_t i = 0; i < btracks.size(); i++) {
-    btlbrs.push_back(btracks[i].tlbr);
-  }
-
-  std::vector<std::vector<float>> _ious = ious(atlbrs, btlbrs);
   std::vector<std::vector<float>> cost_matrix;
-  for (size_t i = 0; i < _ious.size(); i++) {
+  for (size_t i = 0; i < atracks.size(); i++) {
     std::vector<float> _iou;
-    for (size_t j = 0; j < _ious[i].size(); j++) {
-      _iou.push_back(1 - _ious[i][j]);
+    for (size_t j = 0; j < btracks.size(); j++) {
+      _iou.push_back(std::sqrt(std::pow(atracks[i].pose[0] - btracks[j].pose[0], 2) + 
+        std::pow(atracks[i].pose[1] - btracks[j].pose[1], 2) +
+        std::pow(atracks[i].pose[2] - btracks[j].pose[2], 2)));
     }
     cost_matrix.push_back(_iou);
   }
-
+  
   return cost_matrix;
 }
 
