@@ -95,6 +95,10 @@ std::cout << "Yaw: " << tracked_object.yaw << ", " << object.kinematics.pose_wit
     object.shape.dimensions.x = tracked_object.l;
     object.shape.dimensions.y = tracked_object.w;
     object.shape.dimensions.z = tracked_object.h;
+    object.kinematics.twist_with_covariance.twist.linear.x = tracked_object.vx;
+    object.kinematics.twist_with_covariance.twist.linear.y = tracked_object.vy;
+    object.kinematics.twist_with_covariance.twist.linear.z = tracked_object.vz;
+    object.kinematics.twist_with_covariance.twist.angular.z = tracked_object.vyaw;
     object.existence_probability = tracked_object.score;
     object.classification.emplace_back(
       autoware_perception_msgs::build<Label>().label(tracked_object.type).probability(1.0f));

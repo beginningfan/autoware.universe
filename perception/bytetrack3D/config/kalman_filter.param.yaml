@@ -2,18 +2,22 @@
 dt: 0.1           # time step[s]
 dim_x: 11         # x,y,z,yaw,l,w,h,vx,vy,vz,vyaw
 dim_z: 7          # x,y,z,yaw,l,w,h
+
+# Process Noise Covariance
 q_cov_p: 0.1
-q_cov_pyaw: 0.1
+q_cov_pyaw: 0.01
 q_cov_d: 0.1
 q_cov_v: 0.1
 q_cov_vyaw: 0.01
 
+# Observation Noise Covariance
 r_cov_p: 0.1
 r_cov_pyaw: 0.01
 r_cov_d: 0.1
 
+# State Transition Noise Covariance
 p0_cov_p: 0.1     # pose
-p0_cov_pyaw: 0.01  #  
+p0_cov_pyaw: 0.01 #  
 p0_cov_d: 0.1     # dimension
 p0_cov_v: 0.1     # velocity
 p0_cov_vyaw: 0.01 # 

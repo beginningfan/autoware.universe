@@ -130,6 +130,9 @@ std::vector<STrack> ByteTracker::update(const std::vector<ByteTrackObject> & obj
     STrack * det = &detections[matches[i][1]];
     if (track->state == TrackState::Tracked) {
       track->update(*det, this->frame_id);
+      for(size_t it = 0; it < track->pose.size(); it++){
+        track->velocity.at(it) = (track->pose.at(it) - det->pose.at(it)) / track->time_elapsed;
+      }
       activated_stracks.push_back(*track);
     } else {
       track->re_activate(*det, this->frame_id, false);
@@ -163,6 +166,9 @@ std::vector<STrack> ByteTracker::update(const std::vector<ByteTrackObject> & obj
     STrack * det = &detections[matches[i][1]];
     if (track->state == TrackState::Tracked) {
       track->update(*det, this->frame_id);
+      for(size_t it = 0; it < track->pose.size(); it++){
+        track->velocity.at(it) = (track->pose.at(it) - det->pose.at(it)) / track->time_elapsed;
+      }
       activated_stracks.push_back(*track);
     } else {
       track->re_activate(*det, this->frame_id, false);

@@ -34,6 +34,7 @@ struct Object
 {
   float x, y, z, yaw;
   float l, w, h;
+  float vx, vy, vz, vyaw;
   float score;
   int32_t type;
   int32_t track_id;

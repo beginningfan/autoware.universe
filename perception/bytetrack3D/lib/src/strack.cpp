@@ -54,6 +54,7 @@ STrack::STrack(std::vector<float> in_pose, std::vector<float> in_lwh, float scor
   original_pose.assign(in_pose.begin(), in_pose.end());
   lwh.resize(3);
   lwh.assign(in_lwh.begin(), in_lwh.end());
+  velocity.resize(4, 0);
 
   is_activated = false;
   track_id = 0;
@@ -274,7 +275,7 @@ void STrack::predict(const int frame_id)
   }
 
   // else do prediction
-  float time_elapsed = _kf_parameters.dt * (frame_id - this->frame_id);
+  time_elapsed = _kf_parameters.dt * (frame_id - this->frame_id);
   // A matrix(__State Transition Matrix__)
   Eigen::MatrixXd A = Eigen::MatrixXd::Identity(_kf_parameters.dim_x, _kf_parameters.dim_x);
   A(IDX::X, IDX::VX) = time_elapsed;

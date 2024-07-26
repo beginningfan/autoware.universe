@@ -82,13 +82,15 @@ public:
   std::vector<float> original_pose;  // x,y,z,yaw
   std::vector<float> pose;           // x,y,z,yaw
   std::vector<float> lwh;            // l,w,h
+  std::vector<float> velocity;       // vx,xy,vz
+  float time_elapsed;
+  // 构造时不需要赋值，只在最后将速度读出来
 
   int frame_id;
   int tracklet_len;
   int start_frame;
 
   float score;
-
   int label;
 
 private:

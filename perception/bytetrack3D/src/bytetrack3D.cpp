@@ -54,6 +54,7 @@ bool ByteTrack3D::do_inference(ObjectArray & objects)
     Object object{};
     std::vector<float> pose = tracking_result.pose;
     std::vector<float> lwh = tracking_result.lwh;
+    std::vector<float> velocity = tracking_result.velocity;
     object.x = pose[0];
     object.y = pose[1];
     object.z = pose[2];
@@ -61,6 +62,10 @@ bool ByteTrack3D::do_inference(ObjectArray & objects)
     object.l = lwh[0];
     object.w = lwh[1];
     object.h = lwh[2];
+    object.vx = velocity[0];
+    object.vy = velocity[1];
+    object.vz = velocity[2];
+    object.vyaw = velocity[3];
 
     object.score = tracking_result.score;
     object.type = tracking_result.label;

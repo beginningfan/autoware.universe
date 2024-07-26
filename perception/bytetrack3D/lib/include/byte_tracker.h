@@ -54,8 +54,10 @@ class ByteTracker
 {
 public:
   ByteTracker(
-    int track_buffer = 30, float track_thresh = 0.5, float high_thresh = 0.6,
-    float match_thresh = 0.8);
+    int track_buffer = 30,    // Matching queue length
+    float track_thresh = 0.5, // detection score thresh
+    float high_thresh = 0.6,  // init new obj thresh
+    float match_thresh = 2);  // Euclidean distance(meter)
   ~ByteTracker();
 
   std::vector<STrack> update(const std::vector<ByteTrackObject> & objects);
