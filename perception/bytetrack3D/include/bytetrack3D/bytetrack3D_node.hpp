@@ -21,6 +21,7 @@
 #include <tier4_perception_msgs/msg/detected_objects_with_feature.hpp>
 #include <tier4_perception_msgs/msg/dynamic_object_array.hpp>
 #include "autoware_perception_msgs/msg/detected_objects.hpp"
+#include "autoware_perception_msgs/msg/tracked_objects.hpp"
 #if __has_include(<cv_bridge/cv_bridge.hpp>)
 #include <cv_bridge/cv_bridge.hpp>
 #else
@@ -47,7 +48,7 @@ private:
   void on_connect();
   void on_rect(const autoware_perception_msgs::msg::DetectedObjects::ConstSharedPtr msg);
 
-  rclcpp::Publisher<autoware_perception_msgs::msg::DetectedObjects>::SharedPtr objects_pub_;
+  rclcpp::Publisher<autoware_perception_msgs::msg::TrackedObjects>::SharedPtr objects_pub_;
   rclcpp::Publisher<tier4_perception_msgs::msg::DynamicObjectArray>::SharedPtr objects_uuid_pub_;
 
   rclcpp::Subscription<autoware_perception_msgs::msg::DetectedObjects>::SharedPtr

@@ -39,7 +39,7 @@ ByteTrack3DNode::ByteTrack3DNode(const rclcpp::NodeOptions & node_options)
   timer_ =
     rclcpp::create_timer(this, get_clock(), 100ms, std::bind(&ByteTrack3DNode::on_connect, this));
 
-  objects_pub_ = this->create_publisher<autoware_perception_msgs::msg::DetectedObjects>(
+  objects_pub_ = this->create_publisher<autoware_perception_msgs::msg::TrackedObjects>(
     "~/out/objects", 1);
   objects_uuid_pub_ = this->create_publisher<tier4_perception_msgs::msg::DynamicObjectArray>(
     "~/out/objects/debug/uuid", 1);
@@ -64,7 +64,7 @@ void ByteTrack3DNode::on_rect(
 {
   using Label = autoware_perception_msgs::msg::ObjectClassification;
 
-  autoware_perception_msgs::msg::DetectedObjects out_objects;
+  autoware_perception_msgs::msg::TrackedObjects out_objects;
   tier4_perception_msgs::msg::DynamicObjectArray out_objects_uuid;
 
   // Unpack detection results
@@ -75,22 +75,31 @@ void ByteTrack3DNode::on_rect(
     obj.y = feat_obj.kinematics.pose_with_covariance.pose.position.y;
     obj.z = feat_obj.kinematics.pose_with_covariance.pose.position.z;
     obj.yaw = std::acos(feat_obj.kinematics.pose_with_covariance.pose.orientation.w);
+    // obj.yaw = tf2::getYaw(object_.kinematics.pose_with_covariance.pose.orientation);
     obj.l = feat_obj.shape.dimensions.x;
     obj.w = feat_obj.shape.dimensions.y;
     obj.h = feat_obj.shape.dimensions.z;
     obj.score = feat_obj.existence_probability;
     obj.type = feat_obj.classification.front().label;
     object_array.emplace_back(obj);
+std::cout << "_____0_____" << obj.type << std::endl;
   }
 
   bytetrack3D::ObjectArray objects = bytetrack3D_->update_tracker(object_array);
   for (const auto & tracked_object : objects) {
-    autoware_perception_msgs::msg::DetectedObject object;
+    // 先用这个，后面再该成TrackedObject
+    autoware_perception_msgs::msg::TrackedObject object;
+    unique_identifier_msgs::msg::UUID uuid_msg;
+    auto tracked_uuid = tracked_object.unique_id;
+    std::memcpy(uuid_msg.uuid.data(), &tracked_uuid, tracked_uuid.size());
+    object.object_id = uuid_msg;
+    object.existence_probability = tracked_object.score;
+    object.classification.emplace_back(
+      autoware_perception_msgs::build<Label>().label(tracked_object.type).probability(1.0f));
     object.kinematics.pose_with_covariance.pose.position.x = tracked_object.x;
     object.kinematics.pose_with_covariance.pose.position.y = tracked_object.y;
     object.kinematics.pose_with_covariance.pose.position.z = tracked_object.z;
     object.kinematics.pose_with_covariance.pose.orientation.w = std::cos(tracked_object.yaw);
-std::cout << "Yaw: " << tracked_object.yaw << ", " << object.kinematics.pose_with_covariance.pose.orientation.w << std::endl;
     object.kinematics.pose_with_covariance.pose.orientation.z = std::sin(tracked_object.yaw);
     object.shape.dimensions.x = tracked_object.l;
     object.shape.dimensions.y = tracked_object.w;
@@ -99,18 +108,9 @@ std::cout << "Yaw: " << tracked_object.yaw << ", " << object.kinematics.pose_wit
     object.kinematics.twist_with_covariance.twist.linear.y = tracked_object.vy;
     object.kinematics.twist_with_covariance.twist.linear.z = tracked_object.vz;
     object.kinematics.twist_with_covariance.twist.angular.z = tracked_object.vyaw;
-    object.existence_probability = tracked_object.score;
-    object.classification.emplace_back(
-      autoware_perception_msgs::build<Label>().label(tracked_object.type).probability(1.0f));
-
+    
     out_objects.objects.push_back(object);
-
-    auto tracked_uuid = tracked_object.unique_id;
-    unique_identifier_msgs::msg::UUID uuid_msg;
-    std::memcpy(uuid_msg.uuid.data(), &tracked_uuid, tracked_uuid.size());
-    tier4_perception_msgs::msg::DynamicObject dynamic_obj;
-    dynamic_obj.id = uuid_msg;
-    out_objects_uuid.objects.push_back(dynamic_obj);
+std::cout << "_____3_____" << tracked_object.type << std::endl;
   }
 
   out_objects.header = msg->header;

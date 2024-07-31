@@ -5,7 +5,7 @@ dim_z: 7          # x,y,z,yaw,l,w,h
 
 # Process Noise Covariance
 q_cov_p: 0.1
-q_cov_pyaw: 0.01
+q_cov_pyaw: 0.1
 q_cov_d: 0.1
 q_cov_v: 0.1
 q_cov_vyaw: 0.01
